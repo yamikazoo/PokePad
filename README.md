@@ -80,6 +80,7 @@ PokePad is a production-ready web application designed for Pokémon TCG enthusia
 - [x] Full-stack connection (Spring Boot to React)
 - [x] Automated Card Seeding from REST API
 - [x] Lazy-loaded Archive Grid
+- [x] Functional Local MVP
 - [ ] Deployment
 - [ ] User Authentication (Spring Security + JWT)
 - [ ] Multi-Binder "Collection" Logic

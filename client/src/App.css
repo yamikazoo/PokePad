@@ -3,6 +3,9 @@
   font-family: Arial, sans-serif;
   text-align: center;
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* Landing Page Buttons */
@@ -32,11 +35,12 @@
 /* Archive Grid Layout */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
   padding: 20px;
   max-width: 1000px;
   margin: 0 auto;
+  justify-items: center;
 }
 
 .card-item {
@@ -48,10 +52,12 @@
   transition: transform 0.2s;
 }
 
+/* effect on hover */
 .card-item:hover {
   transform: translateY(-5px);
 }
 
+/* image styling */
 .card-item img {
   width: 100%;
   height: auto;
