@@ -37,6 +37,7 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println("fetching Prismatic Evolutions set from API...");
             try {
                 seedPrismaticEvolutions();
+                seedStellarCrown();
             } catch (Exception e) {
                 System.out.println("error seeding data: " + e.getMessage());
                 e.printStackTrace();
@@ -52,7 +53,7 @@ public class DataSeeder implements CommandLineRunner {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
-                .header("X-Api-Key", apiKey) // fill in later
+                .header("X-Api-Key", apiKey)
                 .build();
 
         // send the request
@@ -82,5 +83,45 @@ public class DataSeeder implements CommandLineRunner {
         // save all cards to the database in one go
         cardRepository.saveAll(cardBatch);
         System.out.println("successfully seeded " + cardBatch.size() + " cards from Prismatic Evolutions!");
+    }
+
+    // method to fetch and seed Stellar Crown set from the Pokemon TCG API
+    private void seedStellarCrown() throws Exception {
+        // build the request (asking for set 'sv7' - Stellar Crown)
+        String apiUrl = "https://api.pokemontcg.io/v2/cards?q=set.id:sv7&pageSize=250";
+        
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(apiUrl))
+                .header("X-Api-Key", apiKey)
+                .build();
+
+        // send the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // parse the JSON response
+        JsonNode root = objectMapper.readTree(response.body());
+        JsonNode dataArray = root.path("data");
+
+        List<Card> cardBatch = new ArrayList<>();
+
+        if (dataArray.isArray()) {
+            for (JsonNode node : dataArray) {
+                Card card = new Card();
+                card.setName(node.path("name").asText());
+                card.setSetId(node.path("id").asText());
+                // grab the high res if available, otherwise small
+                card.setImageUrl(node.path("images").path("large").asText());
+                card.setRarity(node.path("rarity").asText("Unknown"));
+                card.setArtist(node.path("artist").asText("Unknown"));
+                
+                // add to card list
+                cardBatch.add(card);
+            }
+        }
+
+        // save all cards to the database in one go
+        cardRepository.saveAll(cardBatch);
+        System.out.println("successfully seeded " + cardBatch.size() + " cards from Stellar Crown!");
     }
 }
