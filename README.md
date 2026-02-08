@@ -1,14 +1,16 @@
 # PokePad
 
-**A Professional Full-Stack Pokémon TCG Collection Manager** *Developed by Calvin Weng & Brian Yu*
+**A Professional Full-Stack Pokémon TCG Collection Manager** 
 
-PokePad is a production-ready web application designed for Pokémon TCG enthusiasts to archive, track, and organize their collections. Unlike simple gallery apps, PokePad features a robust data pipeline that synchronizes with the official Pokémon TCG API to provide real-time card data, high-resolution assets, and personalized binder management.
+*Developed by Calvin Weng & Brian Yu*
+
+PokePad is a web application designed for Pokémon TCG enthusiasts to archive, track, and organize their collections. 
 
 ## 🚀 Features
 
 * **Set Archive:** View 180+ high-resolution cards from the latest sets, such as Prismatic Evolutions.
-* **Intelligent Synchronization:** Automated data pipeline that fetches and persists card metadata from external REST APIs.
-* **Binder Management:** Create and manage digital collections/binders for your physical cards (In Progress).
+* **Synchronization:** Automated data pipeline that fetches and persists card metadata from the external Pokemon TCG REST API.
+* **Binder Management:** Create and manage digital collections/binders for your physical cards.
 * **Wishlist Tracking:** Track cards you need to complete your master sets (In Progress).
 * **Multi-Region Support:** Built-in capability to handle both English and Japanese card sets.
 
@@ -19,21 +21,12 @@ PokePad is a production-ready web application designed for Pokémon TCG enthusia
 * **Framework:** Spring Boot 3.
 * **Data Access:** Spring Data JPA + Hibernate.
 * **Database:** PostgreSQL.
-* **Security:** JWT-based Authentication (Planned).
+* **Security:** JWT-based Authentication (In Progress).
 
 ### **Frontend**
 * **Library:** React 18 (Vite).
 * **State Management:** React Hooks (useState, useEffect).
 * **Performance:** Native browser lazy-loading for image-heavy grids.
-
----
-
-## 🏗️ Architecture & Engineering Highlights
-
-* **Relational Schema Design:** Implemented a complex PostgreSQL schema using Many-to-Many relationships to link users, collections, and cards.
-* **Automated Data Seeder:** Developed an idempotent seeding service using Java’s `HttpClient` to automate bulk card ingestion, handling 180+ records per set.
-* **Performance Optimization:** Utilized **Batch-Saving** techniques in Spring Data JPA to reduce database overhead during bulk imports.
-* **Secure Configuration:** Integrated **Dotenv** for secure environment variable management, ensuring API keys and database credentials remain decoupled from source code.
 
 ---
 
