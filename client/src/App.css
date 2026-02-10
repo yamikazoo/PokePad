@@ -3,9 +3,10 @@
   font-family: Arial, sans-serif;
   text-align: center;
   padding: 20px;
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* Landing Page Buttons */
@@ -38,9 +39,11 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
   padding: 20px;
-  max-width: 1000px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
   justify-items: center;
+  box-sizing: border-box;
 }
 
 .card-item {
