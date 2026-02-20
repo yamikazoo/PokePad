@@ -69,7 +69,8 @@ public class DataSeeder implements CommandLineRunner {
             for (JsonNode node : dataArray) {
                 Card card = new Card();
                 card.setName(node.path("name").asText());
-                card.setSetId(node.path("id").asText());
+                card.setSetId(node.path("set").path("id").asText());
+                card.setCardNumber(node.path("number").asText() + "/" + node.path("set").path("printedTotal").asText());
                 // grab the high res if available, otherwise small
                 card.setImageUrl(node.path("images").path("large").asText());
                 card.setRarity(node.path("rarity").asText("Unknown"));
@@ -109,7 +110,8 @@ public class DataSeeder implements CommandLineRunner {
             for (JsonNode node : dataArray) {
                 Card card = new Card();
                 card.setName(node.path("name").asText());
-                card.setSetId(node.path("id").asText());
+                card.setSetId(node.path("set").path("id").asText());
+                card.setCardNumber(node.path("number").asText() + "/" + node.path("set").path("printedTotal").asText());
                 // grab the high res if available, otherwise small
                 card.setImageUrl(node.path("images").path("large").asText());
                 card.setRarity(node.path("rarity").asText("Unknown"));

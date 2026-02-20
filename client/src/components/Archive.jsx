@@ -1,10 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 // archive component. when clicked fetches cards from backend and displays them
 function Archive({ onBack }) {
     const [cards, setCards] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const cardsBySet = useMemo(() => {
+        return cards.reduce((groupedCards, card) => {
+            const currentSetId = card.setId || 'unknown';
+
+            if (!groupedCards[currentSetId]) {
+                groupedCards[currentSetId] = [];
+            }
+
+            groupedCards[currentSetId].push(card);
+            return groupedCards;
+        }, {});
+    }, [cards]);
+
+    const getSetLogoUrl = (setId) => `https://images.pokemontcg.io/${encodeURIComponent(setId)}/logo.png`;
 
     // connection bridge to the java springboot backend
     useEffect(() => {
@@ -34,21 +49,39 @@ function Archive({ onBack }) {
             {loading && <p>Loading cards from the Vault...</p>}
             {error && <p style={{color: 'red'}}>Error: Is your Spring Boot Backend running?</p>}
 
-            <div className="card-grid">
-                {cards.map(card => (
-                    <div key={card.id} className="card-item">
-                        <img 
-                            src={card.imageUrl} 
-                            alt={card.name} 
-                            loading="lazy"   // lazy loading for performance
-                            width="245"     
-                            height="342"    
+            {Object.entries(cardsBySet).map(([setId, setCards]) => (
+                <section key={setId} className="set-section">
+                    <div className="set-header">
+                        <img
+                            src={getSetLogoUrl(setId)}
+                            alt={`${setId} logo`}
+                            className="set-logo"
+                            loading="lazy"
+                            onError={(event) => {
+                                event.currentTarget.style.display = 'none';
+                            }}
                         />
-                        <h3>{card.name}</h3>
-                        <p>{card.rarity}</p>
+                        <h3 className="set-title">{setId.toUpperCase()}</h3>
                     </div>
-                ))}
-            </div>
+
+                    <div className="card-grid">
+                        {setCards.map(card => (
+                            <div key={card.id} className="card-item">
+                                <img 
+                                    src={card.imageUrl} 
+                                    alt={card.name} 
+                                    loading="lazy"   // lazy loading for performance
+                                    width="245"     
+                                    height="342"    
+                                />
+                                <h3>{card.name}</h3>
+                                <h4>{card.setId} {card.cardNumber}</h4>
+                                <p>{card.rarity}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            ))}
         </div>
     );
 }

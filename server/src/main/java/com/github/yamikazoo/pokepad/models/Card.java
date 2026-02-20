@@ -22,6 +22,7 @@ public class Card {
     
     private String name;
     private String setId;
+    private String cardNumber; // e.g., "27/109"
 
     @Column(length = 500) // account for long image urls
     private String imageUrl;
