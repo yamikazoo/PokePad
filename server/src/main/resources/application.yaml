@@ -14,8 +14,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-# Pokemon TCG API configuration
-# get API key at: https://dev.pokemontcg.io/
-pokemon:
-  api:
-    key: ${POKEMON_API_KEY:}  # leave empty for basic rates
+aws:
+  region: ${AWS_REGION:us-east-2}
+  s3:
+    enabled: ${AWS_S3_ENABLED:true}
+    bucket: ${AWS_S3_BUCKET:pokepad-bucket}
+    catalog-prefix: catalog
