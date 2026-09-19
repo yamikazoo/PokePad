@@ -4,126 +4,100 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.github.yamikazoo.pokepad.models.Card;
 import com.github.yamikazoo.pokepad.repositories.CardRepository;
+import com.github.yamikazoo.pokepad.services.CardImageCacheService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
-import org.springframework.beans.factory.annotation.Value;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Seeds catalog cards from a local classpath JSON file when the database is empty.
+ * Does not call external card APIs.
+ */
 @Component
+@Order(1)
 public class DataSeeder implements CommandLineRunner {
 
+    private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
+    private static final String SEED_RESOURCE = "data/seed-cards.json";
+
     private final CardRepository cardRepository;
-    private final ObjectMapper objectMapper; // spring's tool for reading JSON
+    private final ObjectMapper objectMapper;
+    private final CardImageCacheService cardImageCacheService;
 
-    // uses the value from application.yaml
-    @Value("${pokemon.api.key}")
-    private String apiKey;
-
-    public DataSeeder(CardRepository cardRepository, ObjectMapper objectMapper) {
+    public DataSeeder(
+            CardRepository cardRepository,
+            ObjectMapper objectMapper,
+            CardImageCacheService cardImageCacheService) {
         this.cardRepository = cardRepository;
         this.objectMapper = objectMapper;
+        this.cardImageCacheService = cardImageCacheService;
     }
 
     @Override
     public void run(String... args) {
-        // only run if the database is empty
-        if (cardRepository.count() == 0) {
-            System.out.println("fetching Prismatic Evolutions set from API...");
-            try {
-                seedPrismaticEvolutions();
-                seedStellarCrown();
-            } catch (Exception e) {
-                System.out.println("error seeding data: " + e.getMessage());
-                e.printStackTrace();
+        if (cardRepository.count() > 0) {
+            return;
+        }
+
+        try {
+            List<Card> cards = loadSeedCards();
+            if (cards.isEmpty()) {
+                log.warn("No seed cards found in {}", SEED_RESOURCE);
+                return;
             }
+            cardRepository.saveAll(cards);
+            log.info("Seeded {} cards from local {}", cards.size(), SEED_RESOURCE);
+            cardImageCacheService.cacheCards(cards);
+        } catch (Exception e) {
+            log.error("Failed to seed cards from local JSON", e);
         }
     }
 
-    // method to fetch and seed Prismatic Evolutions set from the Pokemon TCG API
-    private void seedPrismaticEvolutions() throws Exception {
-        // build the request (asking for set 'sv8pt5' - Prismatic Evolutions)
-        String apiUrl = "https://api.pokemontcg.io/v2/cards?q=set.id:sv8pt5&pageSize=250";
-        
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(apiUrl))
-                .header("X-Api-Key", apiKey)
-                .build();
-
-        // send the request
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        // parse the JSON response
-        JsonNode root = objectMapper.readTree(response.body());
-        JsonNode dataArray = root.path("data");
-
-        List<Card> cardBatch = new ArrayList<>();
-
-        if (dataArray.isArray()) {
-            for (JsonNode node : dataArray) {
-                Card card = new Card();
-                card.setName(node.path("name").asText());
-                card.setSetId(node.path("set").path("id").asText());
-                card.setCardNumber(node.path("number").asText() + "/" + node.path("set").path("printedTotal").asText());
-                // grab the high res if available, otherwise small
-                card.setImageUrl(node.path("images").path("large").asText());
-                card.setRarity(node.path("rarity").asText("Unknown"));
-                card.setArtist(node.path("artist").asText("Unknown"));
-                
-                // add to card list
-                cardBatch.add(card);
-            }
+    private List<Card> loadSeedCards() throws Exception {
+        ClassPathResource resource = new ClassPathResource(SEED_RESOURCE);
+        if (!resource.exists()) {
+            return List.of();
         }
 
-        // save all cards to the database in one go
-        cardRepository.saveAll(cardBatch);
-        System.out.println("successfully seeded " + cardBatch.size() + " cards from Prismatic Evolutions!");
+        List<Card> cards = new ArrayList<>();
+        try (InputStream inputStream = resource.getInputStream()) {
+            JsonNode root = objectMapper.readTree(inputStream);
+            if (!root.isArray()) {
+                throw new IllegalStateException(SEED_RESOURCE + " must be a JSON array");
+            }
+            for (JsonNode node : root) {
+                Card card = new Card();
+                card.setName(textOrNull(node, "name"));
+                card.setSetId(textOrNull(node, "setId"));
+                card.setCardNumber(textOrNull(node, "cardNumber"));
+                card.setImageUrl(textOrNull(node, "imageUrl"));
+                card.setRarity(textOrDefault(node, "rarity", "Unknown"));
+                card.setArtist(textOrDefault(node, "artist", "Unknown"));
+                card.setLanguage(textOrNull(node, "language"));
+                cards.add(card);
+            }
+        }
+        return cards;
     }
 
-    // method to fetch and seed Stellar Crown set from the Pokemon TCG API
-    private void seedStellarCrown() throws Exception {
-        // build the request (asking for set 'sv7' - Stellar Crown)
-        String apiUrl = "https://api.pokemontcg.io/v2/cards?q=set.id:sv7&pageSize=250";
-        
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(apiUrl))
-                .header("X-Api-Key", apiKey)
-                .build();
-
-        // send the request
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        // parse the JSON response
-        JsonNode root = objectMapper.readTree(response.body());
-        JsonNode dataArray = root.path("data");
-
-        List<Card> cardBatch = new ArrayList<>();
-
-        if (dataArray.isArray()) {
-            for (JsonNode node : dataArray) {
-                Card card = new Card();
-                card.setName(node.path("name").asText());
-                card.setSetId(node.path("set").path("id").asText());
-                card.setCardNumber(node.path("number").asText() + "/" + node.path("set").path("printedTotal").asText());
-                // grab the high res if available, otherwise small
-                card.setImageUrl(node.path("images").path("large").asText());
-                card.setRarity(node.path("rarity").asText("Unknown"));
-                card.setArtist(node.path("artist").asText("Unknown"));
-                
-                // add to card list
-                cardBatch.add(card);
-            }
+    private static String textOrNull(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || value.isNull()) {
+            return null;
         }
+        String text = value.asText();
+        return text == null || text.isBlank() ? null : text;
+    }
 
-        // save all cards to the database in one go
-        cardRepository.saveAll(cardBatch);
-        System.out.println("successfully seeded " + cardBatch.size() + " cards from Stellar Crown!");
+    private static String textOrDefault(JsonNode node, String field, String defaultValue) {
+        String text = textOrNull(node, field);
+        return text == null ? defaultValue : text;
     }
 }
